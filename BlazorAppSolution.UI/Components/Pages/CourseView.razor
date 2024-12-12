@@ -1,0 +1,225 @@
+﻿@page "/course"
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject CourseService CourseService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Course</PageTitle>
+
+<div class="course-container">
+    <h1>Course</h1>
+
+    <NavLink class="btn btn-primary mb-3" href="/course/create">Add New Course</NavLink>
+
+    <div class="filter-section mb-3">
+        <input type="text" placeholder="Search by course name" @bind="searchText" class="form-control" @oninput="OnSearchInput" />
+    </div>
+
+    @if (filteredCourses == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (filteredCourses.Count == 0)
+    {
+        <p>No courses found.</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var course in filteredCourses)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card course-card">
+                        <img src="@course.ImageName" alt="@course.Name" class="card-img-top" />
+                        <div class="card-body text-center">
+                            <h5 class="card-title">@course.Name</h5>
+                            <p class="card-text">Duration: @course.Duration</p>
+                            <p class="card-text">@course.Description</p>
+                            <p class="card-text">Category: @course.Category.Name</p>
+                            <div class="button-group">
+                                <button class="btn btn-outline-secondary me-2" @onclick="() => UpdateCourse(course.CourseId ?? 0)">Update</button>
+                                <button class="btn btn-outline-danger" @onclick="() => DeleteCourse(course.CourseId ?? 0)">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .course-container {
+        background-color: #f8f9fa;
+        color: #000000;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+        color: #343a40;
+        text-align: center;
+    }
+
+    .filter-section input {
+        width: 100%;
+        margin: 0 auto;
+        display: block;
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.2s;
+    }
+
+        .filter-section input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+    .course-card {
+        background-color: #ffffff;
+        border-radius: 10px;
+        border: 1px solid #eaeaea;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.2s;
+    }
+
+        .course-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .course-card img {
+            max-height: 150px;
+            object-fit: cover;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+
+        .course-card .card-body {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .course-card h5 {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .course-card .card-text {
+            color: #6c757d;
+        }
+
+    .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px; /* Space between buttons */
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    .btn-outline-secondary {
+        border: 1px solid #007bff;
+        color: #007bff;
+        background-color: transparent;
+    }
+
+        .btn-outline-secondary:hover {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+
+    .btn-outline-danger {
+        border: 1px solid #dc3545;
+        color: #dc3545;
+        background-color: transparent;
+    }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+</style>
+
+@code {
+    private List<Course>? filteredCourses;
+    private string searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourses();
+    }
+
+    private async Task LoadCourses()
+    {
+        try
+        {
+            filteredCourses = await CourseService.GetCoursesAsync();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"An error occurred while loading courses: {ex.Message}");
+        }
+    }
+
+    private async void OnSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            // Load all courses if search text is cleared
+            await LoadCourses();
+        }
+        else
+        {
+            try
+            {
+                // Fetch filtered courses from the API
+                filteredCourses = await CourseService.GetCourseByNameAsync(searchText);
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"An error occurred while searching: {ex.Message}");
+            }
+        }
+
+        StateHasChanged(); // Trigger UI update
+    }
+
+    private void UpdateCourse(int courseId)
+    {
+        Navigation.NavigateTo($"/course/edit/{courseId}");
+    }
+
+    private async Task DeleteCourse(int courseId)
+    {
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this course?");
+        if (confirm)
+        {
+            try
+            {
+                await CourseService.DeleteCourseAsync(courseId);
+                await LoadCourses();
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"An error occurred while deleting the course: {ex.Message}");
+            }
+        }
+    }
+}

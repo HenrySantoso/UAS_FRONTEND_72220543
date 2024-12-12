@@ -1,0 +1,214 @@
+﻿@page "/category"
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject CategoryService CategoryService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Category</PageTitle>
+
+<div class="catalog-container">
+    <h1>Category</h1>
+
+    <NavLink class="btn btn-primary mb-3" href="/category/create">Add New Category</NavLink>
+
+    <div class="filter-section mb-3">
+        <input type="text" placeholder="Search by category name" @bind="searchText" class="form-control" @oninput="OnSearchInput" />
+    </div>
+
+    @if (filteredCategories == null)
+
+    {
+        <p><em>Loading...</em></p>
+    }
+
+    else if (filteredCategories.Count == 0)
+
+    {
+        <p>No categories found.</p>
+    }
+
+    else
+
+    {
+        <div class="row">
+            @foreach (var category in filteredCategories)
+
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card category-card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">@category.Name</h5>
+                            <p class="card-text">@category.Description</p>
+                            <div class="button-group">
+                                <button class="btn btn-outline-secondary me-2" @onclick="() => UpdateCategory(category.CategoryId)">Update</button>
+                                <button class="btn btn-outline-danger" @onclick="() => DeleteCategory(category.CategoryId)">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .catalog-container {
+        background-color: #f7f7f7;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+        color: #343a40;
+        text-align: center;
+    }
+
+    .filter-section input {
+        width: 100%;
+        margin: 0 auto;
+        display: block;
+        padding: 10px 15px;
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.2s;
+    }
+
+    .filter-section input:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    .category-card {
+        background-color: #ffffff;
+        border-radius: 10px;
+        border: 1px solid #eaeaea;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+
+        .category-card:hover {
+            transform: scale(1.02);
+        }
+
+        .category-card .card-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .category-card .card-text {
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+
+    .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px; /* space between buttons */
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    .btn-outline-secondary {
+        border: 1px solid #007bff;
+        color: #007bff;
+        background-color: transparent;
+    }
+
+        .btn-outline-secondary:hover {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+
+    .btn-outline-danger {
+        border: 1px solid #dc3545;
+        color: #dc3545;
+        background-color: transparent;
+    }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+</style>
+
+@code {
+    private List<Category>? categories;
+    private List<Category>? filteredCategories;
+    private string searchText = string.Empty;
+    private System.Timers.Timer? searchTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await CategoryService.GetCategoriesAsync();
+            filteredCategories = categories;
+        }
+
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"An error occurred while loading categories: {ex.Message}");
+        }
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+        // Reset and start a timer to delay filtering
+        searchTimer?.Stop();
+        searchTimer = new System.Timers.Timer(300); // 300 ms debounce
+        searchTimer.Elapsed += (s, ev) => { ApplyFilter(); };
+        searchTimer.AutoReset = false;
+        searchTimer.Start();
+    }
+
+    private void ApplyFilter()
+    {
+        InvokeAsync(() =>
+        {
+            if (string.IsNullOrEmpty(searchText))
+            {
+                filteredCategories = categories;
+            }
+            else
+            {
+                filteredCategories = categories?.Where(c => c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+            StateHasChanged(); // Refresh UI
+        });
+    }
+
+    private void UpdateCategory(int categoryId)
+    {
+        Navigation.NavigateTo($"/category/edit/{categoryId}");
+    }
+
+    private async Task DeleteCategory(int categoryId)
+    {
+        try
+        {
+            await CategoryService.DeleteCategoryAsync(categoryId);
+            await LoadCategories(); // Refresh the category list after deletio
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"An error occurred while deleting the category: {ex.Message}");
+        }
+    }
+}

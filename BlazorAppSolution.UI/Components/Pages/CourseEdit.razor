@@ -1,0 +1,115 @@
+﻿@page "/course/edit/{courseId:int}"
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject CourseService CourseService
+@inject CategoryService CategoryService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Edit Course</PageTitle>
+
+<h3 class="text-center mt-4">Edit Course</h3>
+
+<div class="container mt-5">
+    <div class="card shadow p-4">
+        <div class="card-body">
+            @if (course == null || categories == null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else
+            {
+                <form @onsubmit="HandleValidSubmit">
+                    <div class="form-group mb-3">
+                        <label for="Name" class="form-label fw-bold">Course Name:</label>
+                        <input type="text" id="Name" class="form-control" @bind="course.Name" placeholder="Enter course name" />
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="Description" class="form-label fw-bold">Description:</label>
+                        <textarea id="Description" class="form-control" @bind="course.Description" placeholder="Enter course description"></textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="Duration" class="form-label fw-bold">Duration (hours):</label>
+                        <input type="number" id="Duration" class="form-control" @bind="course.Duration" placeholder="Enter duration in hours" />
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="CategoryId" class="form-label fw-bold">Category:</label>
+                        <select id="CategoryId" class="form-control" @onchange="OnCategoryChanged">
+                            <option value="">Select a Category</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.CategoryId" selected="@(course.Category?.CategoryId == category.CategoryId)">
+                                    @category.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="ImageName" class="form-label fw-bold">Image URL:</label>
+                        <input type="text" id="ImageName" class="form-control" @bind="course.ImageName" placeholder="Enter image URL" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                        <button type="button" class="btn btn-secondary w-100" @onclick="CancelEdit">Cancel</button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int courseId { get; set; }
+    private Course? course = new Course();
+    private List<Category>? categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await CategoryService.GetCategoriesAsync();
+        course = await CourseService.GetCourseByIDAsync(courseId);
+
+        // Initialize course.Category if null to prevent NullReferenceException
+        if (course != null && course.Category == null)
+        {
+            course.Category = new Category();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await CourseService.UpdateCourseAsync(courseId, course);
+            Navigation.NavigateTo("/course");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating course: {ex.Message}");
+        }
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        var selectedCategoryId = int.Parse(e.Value?.ToString() ?? "0");
+        course.CategoryId = selectedCategoryId;
+
+        if (categories != null)
+        {
+            var selectedCategory = categories.FirstOrDefault(c => c.CategoryId == selectedCategoryId);
+            if (selectedCategory != null)
+            {
+                course.Category = selectedCategory;
+            }
+        }
+    }
+
+    private void CancelEdit()
+    {
+        Navigation.NavigateTo("/course");
+    }
+}

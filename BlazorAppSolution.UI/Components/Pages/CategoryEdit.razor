@@ -1,0 +1,84 @@
+﻿@page "/category/edit/{categoryId:int}"
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject CategoryService CategoryService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Edit Category</PageTitle>
+
+<h3 class="text-center mt-4">Edit Category</h3>
+
+<div class="container mt-5">
+    <div class="card shadow p-4">
+        <div class="card-body">
+            @if (category == null)
+            {
+                <p><em>Loading...</em></p>
+            } 
+            else
+            {
+                <form>
+                    <div class="form-group mb-3">
+                        <label for="name" class="form-label fw-bold">Name:</label>
+                        <input id="name" @bind="category.Name" class="form-control" placeholder="Enter category name" />
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="description" class="form-label fw-bold">Description:</label>
+                        <input id="description" @bind="category.Description" class="form-control" placeholder="Enter description" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary w-100" @onclick="UpdateCategory">Save</button>
+                        <button type="button" class="btn btn-secondary w-100" @onclick="Cancel">Cancel</button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int categoryId { get; set; }
+
+    private Category category = new Category();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategory();
+    }
+
+    private async Task LoadCategory()
+    {
+        try
+        {
+            category = await CategoryService.GetCategoryByIDAsync(categoryId);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"An error occurred while loading the category: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateCategory()
+    {
+        try
+        {
+            await CategoryService.UpdateCategoryAsync(categoryId, category);
+            await JS.InvokeVoidAsync("alert", "Category updated successfully!");
+            Navigation.NavigateTo("/category");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"An error occurred while saving the category: {ex.Message}");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/category"); // Redirects to the category list page
+    }
+}

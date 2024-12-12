@@ -1,0 +1,65 @@
+﻿@page "/login"
+@using System.Net.Http.Json
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject NavigationManager Navigation
+@inject LoginService LoginService
+
+<h3>Login</h3>
+
+<form @onsubmit="HandleLogin">
+    <div class="form-group">
+        <label for="username">Username:</label>
+        <input id="username" type="text" class="form-control" @bind="username" required />
+    </div>
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input id="password" type="password" class="form-control" @bind="password" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+        try
+        {
+            // Create a Login object from the form input
+            var loginModel = new Login
+                {
+                    UserName = username,  // Changed from UserName to Username
+                    Password = password
+                };
+
+            // Call the login service
+            var token = await LoginService.LoginAsync(loginModel);
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Console.WriteLine("Login successful!");
+                Navigation.NavigateTo("/"); // Redirect to the homepage
+            }
+            else
+            {
+                errorMessage = "Invalid username or password. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            // Display a friendly error message
+            errorMessage = "An unexpected error occurred. Please try again later.";
+            Console.WriteLine($"Login Error: {ex.Message}");
+        }
+    }
+}
+    
