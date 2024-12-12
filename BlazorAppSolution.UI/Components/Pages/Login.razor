@@ -2,6 +2,8 @@
 @using System.Net.Http.Json
 @using System.Text.Json
 @using System.Text
+@using Newtonsoft.Json
+@using BlazorAppSolution.UI.Model
 @inject NavigationManager Navigation
 @inject HttpClient HttpClient
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
@@ -52,7 +54,7 @@
         try
         {
             var loginData = new { userName = username, password = password };
-            var json = JsonSerializer.Serialize(loginData);
+            var json = JsonConvert.SerializeObject(loginData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await HttpClient.PostAsync("https://actbackendseervices.azurewebsites.net/api/login", content);
@@ -62,13 +64,15 @@
 
             if (response.IsSuccessStatusCode)
             {
-                var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent);
+                // Deserialize response to LoginResponse
+                var loginResponse = JsonConvert.DeserializeObject<LoginResponse>(responseContent);
 
-                if (loginResponse?.Token != null)
+                if (!string.IsNullOrEmpty(loginResponse?.Token))
                 {
+                    // Save the token in local storage
                     await LocalStorage.SetItemAsync("auth_token", loginResponse.Token);
                     Console.WriteLine("Navigating to /home");
-                    Navigation.NavigateTo("/home", forceLoad: true);
+                    Navigation.NavigateTo("/home");
                 }
                 else
                 {
