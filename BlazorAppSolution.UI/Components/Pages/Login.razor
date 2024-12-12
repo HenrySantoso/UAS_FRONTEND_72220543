@@ -1,9 +1,11 @@
-﻿@page "/login"
+﻿@page "/"
 @using System.Net.Http.Json
-@using BlazorAppSolution.UI.Model
-@using BlazorAppSolution.UI.Services
+@using System.Text.Json
+@using System.Text
 @inject NavigationManager Navigation
-@inject LoginService LoginService
+@inject HttpClient HttpClient
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@rendermode InteractiveServer
 
 <h3>Login</h3>
 
@@ -14,7 +16,12 @@
     </div>
     <div class="form-group">
         <label for="password">Password:</label>
-        <input id="password" type="password" class="form-control" @bind="password" required />
+        <div class="input-group">
+            <input id="password" type="@passwordInputType" class="form-control" @bind="password" required />
+            <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
+                @(isPasswordVisible ? "Hide" : "Show")
+            </button>
+        </div>
     </div>
     <button type="submit" class="btn btn-primary">Login</button>
 </form>
@@ -29,37 +36,60 @@
     private string password = string.Empty;
     private string? errorMessage;
 
+    private bool isPasswordVisible = false;
+    private string passwordInputType = "password";
+
+    private void TogglePasswordVisibility()
+    {
+        isPasswordVisible = !isPasswordVisible;
+        passwordInputType = isPasswordVisible ? "text" : "password";
+    }
+
     private async Task HandleLogin()
     {
         errorMessage = null;
+
         try
         {
-            // Create a Login object from the form input
-            var loginModel = new Login
-                {
-                    UserName = username,  // Changed from UserName to Username
-                    Password = password
-                };
+            var loginData = new { userName = username, password = password };
+            var json = JsonSerializer.Serialize(loginData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Call the login service
-            var token = await LoginService.LoginAsync(loginModel);
+            var response = await HttpClient.PostAsync("https://actbackendseervices.azurewebsites.net/api/login", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
 
-            if (!string.IsNullOrEmpty(token))
+            Console.WriteLine($"API Response: {responseContent}");  // Log the response content
+
+            if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Login successful!");
-                Navigation.NavigateTo("/"); // Redirect to the homepage
+                var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent);
+
+                if (loginResponse?.Token != null)
+                {
+                    await LocalStorage.SetItemAsync("auth_token", loginResponse.Token);
+                    Console.WriteLine("Navigating to /home");
+                    Navigation.NavigateTo("/home", forceLoad: true);
+                }
+                else
+                {
+                    errorMessage = "Invalid username or password.";
+                    Console.WriteLine("Token is null or empty.");
+                }
             }
             else
             {
-                errorMessage = "Invalid username or password. Please try again.";
+                errorMessage = $"Error: {response.StatusCode}. Response: {responseContent}";
+                Console.WriteLine($"Error: {response.StatusCode}. Details: {responseContent}");
             }
         }
         catch (Exception ex)
         {
-            // Display a friendly error message
-            errorMessage = "An unexpected error occurred. Please try again later.";
-            Console.WriteLine($"Login Error: {ex.Message}");
+            errorMessage = $"An error occurred: {ex.Message}";
         }
     }
+
+    private class LoginResponse
+    {
+        public string? Token { get; set; }
+    }
 }
-    

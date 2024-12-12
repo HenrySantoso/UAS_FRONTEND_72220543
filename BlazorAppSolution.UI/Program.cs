@@ -1,5 +1,6 @@
 using BlazorAppSolution.UI.Components;
 using BlazorAppSolution.UI.Services;
+using Blazored.LocalStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,7 @@ builder.Services.AddScoped<CategoryService>(); // Add this line
 builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<LoginService>();
 
+builder.Services.AddBlazoredLocalStorage();
 
 // Register HttpClient
 builder.Services.AddHttpClient();

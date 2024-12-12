@@ -30,8 +30,8 @@ namespace BlazorAppSolution.UI.Services
                 if (response.IsSuccessStatusCode)
                 {
                     // Deserialize the response and get the token
-                    var loginResponse = await response.Content.ReadFromJsonAsync<LoginRespond>();
-                    var token = loginResponse?.Token;
+                    var loginResponse = await response.Content.ReadFromJsonAsync<Login>();
+                    var token = loginResponse?.token;
 
                     if (!string.IsNullOrWhiteSpace(token))
                     {
