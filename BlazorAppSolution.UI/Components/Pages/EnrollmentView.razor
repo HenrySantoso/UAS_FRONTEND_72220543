@@ -1,0 +1,48 @@
+﻿@page "/enrollment"
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject EnrollmentService EnrollmentService
+
+<h3>Enrollment List</h3>
+<NavLink class="btn btn-primary mb-3" href="/enrollment/create">Add New Enrollment</NavLink>
+@if (enrollments == null)
+{
+    <p>Loading...</p>
+}
+else if (!enrollments.Any())
+{
+    <p>No enrollments found.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Enrollment ID</th>
+                <th>Instructor ID</th>
+                <th>Course ID</th>
+                <th>Enrolled At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var enrollment in enrollments)
+            {
+                <tr>
+                    <td>@enrollment.enrollmentId</td>
+                    <td>@enrollment.instructorId</td>
+                    <td>@enrollment.courseId</td>
+                    <td>@enrollment.enrolledAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Enrollment>? enrollments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        enrollments = await EnrollmentService.GetAllAsync();
+    }
+}

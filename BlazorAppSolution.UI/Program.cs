@@ -12,6 +12,8 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<CategoryService>(); // Add this line
 builder.Services.AddScoped<CourseService>();
 builder.Services.AddScoped<LoginService>();
+builder.Services.AddScoped<EnrollmentService>();
+
 
 builder.Services.AddBlazoredLocalStorage();
 
