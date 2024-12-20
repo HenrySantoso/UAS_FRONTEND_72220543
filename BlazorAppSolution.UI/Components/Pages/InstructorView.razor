@@ -1,0 +1,49 @@
+﻿@page "/instructor"
+@using BlazorAppSolution.UI.Model
+@using BlazorAppSolution.UI.Services
+@inject InstructorService InstructorService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<h3>Instructor List</h3>
+
+@if (instructors == null)
+{
+    <p>Loading...</p>
+}
+else if (!instructors.Any())
+{
+    <p>No instructors found.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Instructor ID</th>
+                <th>User Name</th>
+                <th>Full Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var instructor in instructors)
+            {
+                <tr>
+                    <td>@instructor.instructorId</td>
+                    <td>@instructor.userName</td>
+                    <td>@instructor.fullName</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Instructor>? instructors;
+
+    protected override async Task OnInitializedAsync()
+    {
+        instructors = await InstructorService.GetAllInstructorsAsync();
+    }
+}

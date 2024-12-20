@@ -2,7 +2,7 @@
 
 public class Instructor
 {
-    public int instructirId { get; set; }
+    public int instructorId { get; set; }
     public string userName { get; set; }
     public string fullName { get; set; }
 }

@@ -40,7 +40,7 @@
                             <p class="card-text">Duration: @course.Duration</p>
                             <p class="card-text">@course.Description</p>
                             <p class="card-text">Category: @course.Category.Name</p>
-                            <p class="card-text">Total Enrollment: @GetTotalEnrollments(course.CourseId ?? 0)</p> <!-- Update this line -->
+                            <p class="card-text">Total Enroller: @GetTotalEnrollments(course.CourseId ?? 0)</p> <!-- Update this line -->
                             <div class="button-group">
                                 <button class="btn btn-outline-secondary me-2" @onclick="() => UpdateCourse(course.CourseId ?? 0)">Update</button>
                                 <button class="btn btn-outline-danger" @onclick="() => DeleteCourse(course.CourseId ?? 0)">Delete</button>
