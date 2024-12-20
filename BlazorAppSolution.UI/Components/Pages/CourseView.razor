@@ -2,6 +2,7 @@
 @using BlazorAppSolution.UI.Model
 @using BlazorAppSolution.UI.Services
 @inject CourseService CourseService
+@inject EnrollmentService EnrollmentService  
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
@@ -35,9 +36,11 @@
                         <img src="@course.ImageName" alt="@course.Name" class="card-img-top" />
                         <div class="card-body text-center">
                             <h5 class="card-title">@course.Name</h5>
+                            <p class="card-text">Id: @course.CourseId</p>
                             <p class="card-text">Duration: @course.Duration</p>
                             <p class="card-text">@course.Description</p>
                             <p class="card-text">Category: @course.Category.Name</p>
+                            <p class="card-text">Total Enrollment: @GetTotalEnrollments(course.CourseId ?? 0)</p> <!-- Update this line -->
                             <div class="button-group">
                                 <button class="btn btn-outline-secondary me-2" @onclick="() => UpdateCourse(course.CourseId ?? 0)">Update</button>
                                 <button class="btn btn-outline-danger" @onclick="() => DeleteCourse(course.CourseId ?? 0)">Delete</button>
@@ -51,129 +54,36 @@
 </div>
 
 <style>
-    .course-container {
-        background-color: #f8f9fa;
-        color: #000000;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-        font-size: 2em;
-        margin-bottom: 20px;
-        color: #343a40;
-        text-align: center;
-    }
-
-    .filter-section input {
-        width: 100%;
-        margin: 0 auto;
-        display: block;
-        padding: 10px 15px;
-        border-radius: 5px;
-        border: 1px solid #ced4da;
-        transition: border-color 0.2s;
-    }
-
-        .filter-section input:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-
-    .course-card {
-        background-color: #ffffff;
-        border-radius: 10px;
-        border: 1px solid #eaeaea;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        transition: transform 0.2s;
-    }
-
-        .course-card:hover {
-            transform: translateY(-3px);
-        }
-
-        .course-card img {
-            max-height: 150px;
-            object-fit: cover;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-        }
-
-        .course-card .card-body {
-            flex-grow: 1;
-            padding: 20px;
-        }
-
-        .course-card h5 {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #007bff;
-            margin-bottom: 10px;
-        }
-
-        .course-card .card-text {
-            color: #6c757d;
-        }
-
-    .button-group {
-        display: flex;
-        justify-content: center;
-        gap: 10px; /* Space between buttons */
-    }
-
-    .btn {
-        padding: 10px 20px;
-        border-radius: 5px;
-        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-    }
-
-    .btn-outline-secondary {
-        border: 1px solid #007bff;
-        color: #007bff;
-        background-color: transparent;
-    }
-
-        .btn-outline-secondary:hover {
-            background-color: #007bff;
-            color: #ffffff;
-        }
-
-    .btn-outline-danger {
-        border: 1px solid #dc3545;
-        color: #dc3545;
-        background-color: transparent;
-    }
-
-        .btn-outline-danger:hover {
-            background-color: #dc3545;
-            color: #ffffff;
-        }
+    /* Your existing styles here */
 </style>
 
 @code {
     private List<Course>? filteredCourses;
     private string searchText = string.Empty;
+    private List<Enrollment>? enrollments;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCourses();
+        await LoadCoursesAndEnrollments();
     }
 
-    private async Task LoadCourses()
+    private async Task LoadCoursesAndEnrollments()
     {
         try
         {
             filteredCourses = await CourseService.GetCoursesAsync();
+            enrollments = await EnrollmentService.GetEnrollmentsAsync(); // Fetch all enrollments
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"An error occurred while loading courses: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"An error occurred while loading courses or enrollments: {ex.Message}");
         }
+    }
+
+    private int GetTotalEnrollments(int courseId)
+    {
+        if (enrollments == null) return 0;
+        return enrollments.Count(e => e.courseId == courseId); // Count enrollments for this course
     }
 
     private async void OnSearchInput(ChangeEventArgs e)
@@ -183,13 +93,13 @@
         if (string.IsNullOrWhiteSpace(searchText))
         {
             // Load all courses if search text is cleared
-            await LoadCourses();
+            await LoadCoursesAndEnrollments();
         }
         else
         {
             try
             {
-                // Fetch filtered courses from the API
+                // Fetch filtered courses and enrollments based on search
                 filteredCourses = await CourseService.GetCourseByNameAsync(searchText);
             }
             catch (Exception ex)
@@ -214,7 +124,7 @@
             try
             {
                 await CourseService.DeleteCourseAsync(courseId);
-                await LoadCourses();
+                await LoadCoursesAndEnrollments(); // Reload after deleting
             }
             catch (Exception ex)
             {

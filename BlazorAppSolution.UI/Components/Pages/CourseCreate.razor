@@ -60,6 +60,7 @@
         try
         {
             availableCategories = await CourseService.GetCategoriesAsync();
+            Console.WriteLine($"Fetched {availableCategories.Count} categories");
         }
         catch (Exception ex)
         {

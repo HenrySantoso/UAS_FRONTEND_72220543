@@ -63,12 +63,24 @@
         }
     }
 
+    private bool categoryUpdated;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (categoryUpdated)
+        {
+            categoryUpdated = false;
+            await JS.InvokeVoidAsync("alert", "Category updated successfully!");
+        }
+    }
+
     private async Task UpdateCategory()
     {
         try
         {
             await CategoryService.UpdateCategoryAsync(categoryId, category);
-            await JS.InvokeVoidAsync("alert", "Category updated successfully!");
+            categoryUpdated = true;
+            StateHasChanged(); // Ensure the component is rerendered
             Navigation.NavigateTo("/category");
         }
         catch (Exception ex)

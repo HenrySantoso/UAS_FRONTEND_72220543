@@ -9,4 +9,10 @@ public class Course
     public string? Description { get; set; }
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
+
+    // Add a method to calculate total enrollments for a course
+    public int GetTotalEnrollments(List<Enrollment> enrollments)
+    {
+        return enrollments.Count(e => e.courseId == this.CourseId);
+    }
 }

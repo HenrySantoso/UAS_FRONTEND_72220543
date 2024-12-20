@@ -3,6 +3,7 @@
 @using BlazorAppSolution.UI.Services
 @inject EnrollmentService EnrollmentService
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <h3>Create Enrollment</h3>
 
@@ -34,7 +35,7 @@
 }
 
 @code {
-    private EnrollmentAdd newEnrollment = new EnrollmentAdd();  // Using EnrollmentAdd model
+    private EnrollmentAdd newEnrollment = new();
     private bool isLoading = false;
     private string? errorMessage;
 
@@ -43,21 +44,18 @@
         isLoading = true;
         errorMessage = null;
 
-        // Log the content of the newEnrollment
-        Console.WriteLine($"Instructor ID: {newEnrollment.instructorId}, Course ID: {newEnrollment.courseId}");
-
-        bool isSuccess = await EnrollmentService.CreateAsync(newEnrollment);
-
-        isLoading = false;
-
-        if (isSuccess)
+        try
         {
-            Navigation.NavigateTo("/enrollment");
+            await EnrollmentService.AddEnrollmentAsync(newEnrollment);
+            Navigation.NavigateTo("/enrollment"); // Redirect after success
         }
-        else
+        catch (Exception ex)
         {
-            errorMessage = "Error creating enrollment. Please try again.";
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
-
 }

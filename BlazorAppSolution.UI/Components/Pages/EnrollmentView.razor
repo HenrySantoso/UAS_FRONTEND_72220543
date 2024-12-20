@@ -43,6 +43,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        enrollments = await EnrollmentService.GetAllAsync();
+        enrollments = await EnrollmentService.GetEnrollmentsAsync();
     }
 }
